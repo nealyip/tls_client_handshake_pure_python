@@ -39,7 +39,7 @@ if __name__ == '__main__':
         cipher_suites = [parsed_args.cipher]
     else:
         cipher_suites = (
-            # 'ECDHE-ECDSA-AES256-GCM-SHA384',
+            'ECDHE-ECDSA-AES256-GCM-SHA384',
             'ECDHE-RSA-AES256-GCM-SHA384',
             'ECDHE-RSA-AES256-SHA384',
             'ECDHE-RSA-AES256-SHA',

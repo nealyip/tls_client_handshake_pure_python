@@ -142,7 +142,7 @@ class SupportedVersionsExtension(Extension):
 
     @classmethod
     def load_from_bytes(cls, data_bytes):
-        return cls((tls.TLS.get_by_code(tuple(data_bytes[i:i+1] for i in range(0, len(data_bytes)))), ))
+        return cls((tls.TLS.get_by_code(tuple(data_bytes[i:i + 1] for i in range(0, len(data_bytes)))),))
 
     @property
     def data_bytes(self):
@@ -169,3 +169,50 @@ class PaddingExtension(Extension):
     @property
     def data_bytes(self):
         return b'\x00'
+
+
+class NextProtocolNegotiationExtension(Extension):
+    header = b'\x33\x74'
+
+
+class PskKeyExchangeModeExtension(Extension):
+    header = b'\x00\x2d'
+    inner_len_byte_size = 1
+
+    @property
+    def data_bytes(self):
+        return b'\x01'  # psk_dhe_ke
+
+
+class KeyShareExtension(Extension):
+    header = b'\x00\x33'
+
+    def __init__(self, key=None):
+        self.key = key
+
+    @classmethod
+    def load_from_bytes(cls, data_bytes):
+        return cls(data_bytes[4:])
+
+    @property
+    def data_bytes(self):
+        group = b'\x00\x17'
+
+        from cryptography.hazmat.primitives.asymmetric import ec
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, PrivateFormat, NoEncryption
+        from asn1crypto.keys import PublicKeyInfo
+        key = ec.generate_private_key(
+            curve=ec.SECP256R1(),
+            backend=default_backend(),
+        )
+        x = key.private_bytes(Encoding.DER, PrivateFormat.TraditionalOpenSSL, NoEncryption())
+        args = (
+            Encoding.DER,
+            PublicFormat.SubjectPublicKeyInfo
+        )
+        der = key.public_key().public_bytes(*args)
+        info = PublicKeyInfo.load(der)
+
+        data = prepend_length(info['public_key'].native, len_byte_size=2)
+        return group + data

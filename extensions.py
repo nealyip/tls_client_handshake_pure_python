@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+import tls
 import constants
 from packer import prepend_length
 
@@ -99,7 +100,7 @@ class ApplicationLayerProtocolNegotiationExtension(Extension):
     def load_from_bytes(cls, data_bytes):
         length = int.from_bytes(data_bytes[2:3], 'big')
         protocol = data_bytes[3:3 + length]
-        return cls((protocol, ))
+        return cls((protocol,))
 
     @property
     def data_bytes(self):
@@ -138,6 +139,10 @@ class SupportedVersionsExtension(Extension):
 
     def __init__(self, tls_versions):
         self.versions = tls_versions
+
+    @classmethod
+    def load_from_bytes(cls, data_bytes):
+        return cls((tls.TLS.get_by_code(tuple(data_bytes[i:i+1] for i in range(0, len(data_bytes)))), ))
 
     @property
     def data_bytes(self):

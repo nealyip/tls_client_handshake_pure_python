@@ -31,6 +31,12 @@ class TLS(ABC):
     def __le__(self, other):
         return other.code >= self.code
 
+    @classmethod
+    def get_by_code(cls, code):
+        g = globals()
+        found = next(filter(lambda x: getattr(g[x], 'code', None) == code, g))
+        return g[found]()
+
 
 class TLSV1(TLS):
     code = (b'\x03', b'\x01')

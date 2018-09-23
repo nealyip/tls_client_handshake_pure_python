@@ -1053,14 +1053,14 @@ def prf(tls_version, algorithm, secret, label, seed, output_length):
 
 
 class CipherSuite:
-    def __init__(self, tls_version, client_random, server_random, client_cert, cipher_suite):
+    def __init__(self, tls_version, client_random, server_random, server_cert, cipher_suite):
         self.properties = cipher_suite
         self.tls_version = tls_version
         self.client_random = client_random
         self.server_random = server_random
-        self.client_cert = client_cert
+        self.server_cert = server_cert
         ke = cipher_suite['key_exchange'].split('/')
-        args = [tls_version, client_random, server_random, client_cert, ke[1] if len(ke) > 1 else None]
+        args = [tls_version, client_random, server_random, server_cert, ke[1] if len(ke) > 1 else None]
         self.key_exchange: key_exchange.KeyExchange = getattr(key_exchange, ke[0])(*args)
         self.keys = dict()
 
@@ -1082,11 +1082,11 @@ class CipherSuite:
         return sp
 
     @classmethod
-    def get_from_id(cls, tls_version, client_random, server_random, client_cert, id):
+    def get_from_id(cls, tls_version, client_random, server_random, server_cert, id):
         id = '0x{:04X}'.format(int.from_bytes(id, 'big'))
         found = next(filter(lambda cipher: CIPHER_SUITES[cipher]['id'] == id, CIPHER_SUITES))
 
-        return CipherSuite(tls_version, client_random, server_random, client_cert, CIPHER_SUITES[found])
+        return CipherSuite(tls_version, client_random, server_random, server_cert, CIPHER_SUITES[found])
 
     @property
     def pre_master_secret(self):

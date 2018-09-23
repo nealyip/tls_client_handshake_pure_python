@@ -55,6 +55,42 @@ class RsaPkcs1Sha1(SignatureAlgorithm):
         pass
 
 
+class RsaPkcs1Sha256(SignatureAlgorithm):
+    code = b'\x04\x01'
+
+    def verify(self, signature, content):
+        self.public_key.verify(signature, content, padding.PKCS1v15(), SHA256())
+
+    def sign(self, content):
+        pass
+
+
+class RsaPssRsaeSha256(SignatureAlgorithm):
+    code = b'\x08\x09'
+
+    def verify(self, signature, content):
+        self.public_key.verify(signature, content, padding.PSS(
+            mgf=padding.MGF1(SHA256()),
+            salt_length=padding.PSS.MAX_LENGTH
+        ), SHA256())
+
+    def sign(self, content):
+        pass
+
+
+class RsaPssRsaeSha384(SignatureAlgorithm):
+    code = b'\x08\x05'
+
+    def verify(self, signature, content):
+        self.public_key.verify(signature, content, padding.PSS(
+            mgf=padding.MGF1(SHA384()),
+            salt_length=padding.PSS.MAX_LENGTH
+        ), SHA384())
+
+    def sign(self, content):
+        pass
+
+
 class EcdsaSecp256r1Sha256(SignatureAlgorithm):
     code = b'\x04\x03'
 
@@ -89,6 +125,9 @@ class EcdsaSecp384r1Sha384(SignatureAlgorithm):
 # b'\x02\x01', # rsa_pkcs1_sha1
 # b'\x02\x02', # Signature Algorithm: SHA1 DSA (0x0202)
 # b'\x02\x03', # Signature Algorithm: ecdsa_sha1 (0x0203)
-# b'\x08\x04'  # rss_pss_rsae_sha256
-# b'\x08\x05'  # rss_pss_rsae_sha384
+# b'\x08\x04'  # rsa_pss_rsae_sha256
+# b'\x08\x05'  # rsa_pss_rsae_sha384
 # b'\x08\x06'  # rsa_pss_rsae_sha512
+# b'\x08\x09'  # rsa_pss_pss_sha256
+# b'\x08\x0a'  # rsa_pss_pss_sha384
+# b'\x08\x0b'  # rsa_pss_pss_sha512

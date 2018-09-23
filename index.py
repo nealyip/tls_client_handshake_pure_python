@@ -23,6 +23,7 @@ if __name__ == '__main__':
     extensions = (
         extensions.ServerNameExtension(host),
         extensions.SignatureAlgorithmExtension((
+            signature_algorithms.RsaPkcs1Sha256,
             signature_algorithms.RsaPkcs1Sha1,
             signature_algorithms.EcdsaSecp256r1Sha256,
             signature_algorithms.EcdsaSecp384r1Sha384
@@ -38,7 +39,7 @@ if __name__ == '__main__':
         cipher_suites = [parsed_args.cipher]
     else:
         cipher_suites = (
-            'ECDHE-ECDSA-AES256-GCM-SHA384',
+            # 'ECDHE-ECDSA-AES256-GCM-SHA384',
             'ECDHE-RSA-AES256-GCM-SHA384',
             'ECDHE-RSA-AES256-SHA384',
             'ECDHE-RSA-AES256-SHA',

@@ -128,6 +128,8 @@ class EcdsaSecp384r1Sha384(SignatureAlgorithm):
 # b'\x08\x04'  # rsa_pss_rsae_sha256
 # b'\x08\x05'  # rsa_pss_rsae_sha384
 # b'\x08\x06'  # rsa_pss_rsae_sha512
+# b'\x08\x07'  # ed25519
+# b'\x08\x08'  # ed448
 # b'\x08\x09'  # rsa_pss_pss_sha256
 # b'\x08\x0a'  # rsa_pss_pss_sha384
 # b'\x08\x0b'  # rsa_pss_pss_sha512

@@ -10,6 +10,7 @@ from cipher_suites import CIPHER_SUITES, CipherSuite
 from packer import pack, prepend_length, record
 from reader import read
 from print_colors import bcolors
+from extensions import Extension, ApplicationLayerProtocolNegotiationExtension as ALPN
 
 
 def print_hex(b):
@@ -46,6 +47,7 @@ class Client:
         self.cipher_suite: CipherSuite = None
         self.server_certificate = None
         self.match_hostname = match_hostname
+        self.http_version = None
 
         self.conn = socket.create_connection((host, 443))
         self.debug = debug
@@ -106,7 +108,19 @@ class Client:
         assert hello_bytes[:1] == b'\x02', 'Not server hello'
         tls_version = hello_bytes[4:6]
         assert tls_version == self.tls_version, 'Not a desired tls version'
-        self.server_random = hello_bytes[6:6 + 32]
+
+        # Parse hello bytes
+        self.server_random, hello_bytes = hello_bytes[6:6 + 32], hello_bytes[6 + 32:]
+        session_id_length = int.from_bytes(hello_bytes[:1], 'big')
+        session_id, hello_bytes = hello_bytes[:session_id_length + 1], hello_bytes[session_id_length + 1:]
+        server_cipher_suite, hello_bytes = hello_bytes[:2], hello_bytes[2:]
+        compression_method, hello_bytes = hello_bytes[:1], hello_bytes[1:]
+        extensions_length, hello_bytes = int.from_bytes(hello_bytes[:2], 'big'), hello_bytes[2:]
+        extensions = hello_bytes[:extensions_length]
+        self.extensions = Extension.parse_extensions(extensions)
+        alpn = list(filter(lambda x: isinstance(x, ALPN), self.extensions))
+        self.http_version = alpn[0].protocols[0] if len(alpn) > 0 else constants.EXTENSION_ALPN_HTTP_1_1
+        assert self.http_version == constants.EXTENSION_ALPN_HTTP_1_1, 'Not support http2 yet'
 
         certificate_bytes = self.read()
         assert certificate_bytes[0] == 0x0B, 'Not a certificate response'
@@ -116,7 +130,6 @@ class Client:
         self.server_certificate = get_certificate(certificate_bytes, open(r'./debug/{}.crt'.format(self.host), 'wb+'),
                                                   match_hostname=self.match_hostname, host=self.host)
 
-        server_cipher_suite = hello_bytes[39 + hello_bytes[38]:][:2]
         self.cipher_suite = CipherSuite.get_from_id(self.tls_version, self.client_random, self.server_random,
                                                     self.server_certificate, server_cipher_suite)
 
@@ -125,8 +138,8 @@ class Client:
         if next_bytes[:1] == b'\x0c':  # Server key exchange
             self.cipher_suite.parse_key_exchange_params(next_bytes)
 
-            hello_bytes = self.read()
-            self.messages.append(hello_bytes)
+            hello_done_bytes = self.read()
+            self.messages.append(hello_done_bytes)
         self.debug_print('Cipher suite negotiated', ' {}({})'.format(self.cipher_suite, print_hex(server_cipher_suite)))
         self.debug_print('TLS Version', self.tls_version)
         self.debug_print('Key exchange', self.cipher_suite.key_exchange.__class__.__name__)

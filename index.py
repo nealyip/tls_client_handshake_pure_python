@@ -4,6 +4,7 @@ import signature_algorithms
 import tls
 from client import Client
 import argparse
+import constants
 
 
 def args():
@@ -29,7 +30,10 @@ if __name__ == '__main__':
             signature_algorithms.EcdsaSecp384r1Sha384
         )),
         extensions.ECPointFormatsExtension(),
-        extensions.ApplicationLayerProtocolNegotiationExtension(),
+        extensions.ApplicationLayerProtocolNegotiationExtension((
+            constants.EXTENSION_ALPN_HTTP_1_1,
+            # constants.EXTENSION_ALPN_HTTP_2,
+        )),
         extensions.SupportedGroupsExtension((ec_curves.SECP256R1(),)),
         extensions.SupportedVersionsExtension((tls_version,)),
         extensions.SessionTicketExtension()

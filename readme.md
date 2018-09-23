@@ -37,6 +37,7 @@ TLS v1.3
 TLS v1.0 (low priority as it has already end of life)  
 PSS Padding on signature algorithm  
 Other Cipher suites such as DE  
+http2  
 
 
 # Contribution #

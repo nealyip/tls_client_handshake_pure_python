@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 
 import constants
 from packer import prepend_length
@@ -7,6 +7,24 @@ from packer import prepend_length
 class Extension(ABC):
     header = b''
     inner_len_byte_size = 2
+
+    @classmethod
+    def parse_extensions(cls, ext_bytes):
+        exts = []
+        while ext_bytes:
+            ext_type, ext_bytes = ext_bytes[:2], ext_bytes[2:]
+
+            g = globals()
+            found = next(filter(lambda x: getattr(g[x], 'header', None) == ext_type, g))
+            length, ext_bytes = int.from_bytes(ext_bytes[:2], 'big'), ext_bytes[2:]
+            data, ext_bytes = ext_bytes[:length], ext_bytes[length:]
+            exts.append(g[found].load_from_bytes(data))
+
+        return tuple(exts)
+
+    @classmethod
+    def load_from_bytes(cls, data_bytes):
+        return cls()
 
     @property
     def data_bytes(self):
@@ -27,6 +45,10 @@ class ServerNameExtension(Extension):
 
     def __init__(self, host):
         self.host = host.encode(encoding='utf-8') if isinstance(host, str) else host
+
+    @classmethod
+    def load_from_bytes(cls, data_bytes):
+        return cls(data_bytes)
 
     @property
     def data_bytes(self):
@@ -70,9 +92,20 @@ class SignedCertificateTimestampExtension(Extension):
 class ApplicationLayerProtocolNegotiationExtension(Extension):
     header = b'\x00\x10'
 
+    def __init__(self, protocols):
+        self.protocols = protocols
+
+    @classmethod
+    def load_from_bytes(cls, data_bytes):
+        length = int.from_bytes(data_bytes[2:3], 'big')
+        protocol = data_bytes[3:3 + length]
+        return cls((protocol, ))
+
     @property
     def data_bytes(self):
-        data = prepend_length(constants.EXTENSION_ALPN_HTTP_1_1, len_byte_size=1)
+        data = b''
+        for protocol in self.protocols:
+            data += prepend_length(protocol, len_byte_size=1)
         return data
 
 

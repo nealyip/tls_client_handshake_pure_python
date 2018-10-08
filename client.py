@@ -95,6 +95,7 @@ class Client:
         self.messages.append(client_hello_bytes)
         self.debug_print('Host', self.host)
         self.debug_print('Port', self.port)
+        self.debug_print('Client Random', print_hex(self.client_random))
         self.debug_print('Cipher suite suggested',
                          '{}'.format(', '.join(cipher['openssl_name'] for cipher in self.ciphers)))
 
@@ -142,6 +143,7 @@ class Client:
             self.messages.append(hello_done_bytes)
         self.debug_print('Cipher suite negotiated', ' {}({})'.format(self.cipher_suite, print_hex(server_cipher_suite)))
         self.debug_print('TLS Version', self.tls_version)
+        self.debug_print('Server Random', print_hex(self.server_random))
         self.debug_print('Key exchange', self.cipher_suite.key_exchange.__class__.__name__)
 
     @log

@@ -27,7 +27,7 @@ pipenv install
 python index.py <domain>  
 for example,  
 python index.py www.facebook.com  
-To specify cipher
+To specify cipher  
 python index.py <domain> -c <cipher>  
 for example,  
 python index.py www.facebook.com -c AES256-SHA

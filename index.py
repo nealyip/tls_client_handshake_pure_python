@@ -48,6 +48,7 @@ if __name__ == '__main__':
             'ECDHE-RSA-AES256-SHA384',
             'ECDHE-RSA-AES256-SHA',
             'AES256-GCM-SHA384',
+            'AES256-SHA256',
             'AES256-SHA',
             'AES128-SHA',
         )

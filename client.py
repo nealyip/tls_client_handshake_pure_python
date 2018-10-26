@@ -11,6 +11,7 @@ from packer import pack, prepend_length, record
 from reader import read
 from print_colors import bcolors
 from extensions import Extension, ApplicationLayerProtocolNegotiationExtension as ALPN
+from cryptography.hazmat.primitives.hashes import SHA256
 
 
 def print_hex(b):
@@ -95,7 +96,7 @@ class Client:
         self.messages.append(client_hello_bytes)
         self.debug_print('Host', self.host)
         self.debug_print('Port', self.port)
-        self.debug_print('Client Random', print_hex(self.client_random))
+        self.debug_print('Client random', print_hex(self.client_random))
         self.debug_print('Cipher suite suggested',
                          '{}'.format(', '.join(cipher['openssl_name'] for cipher in self.ciphers)))
 
@@ -142,9 +143,12 @@ class Client:
             hello_done_bytes = self.read()
             self.messages.append(hello_done_bytes)
         self.debug_print('Cipher suite negotiated', ' {}({})'.format(self.cipher_suite, print_hex(server_cipher_suite)))
-        self.debug_print('TLS Version', self.tls_version)
-        self.debug_print('Server Random', print_hex(self.server_random))
+        self.debug_print('TLS version', self.tls_version)
+        self.debug_print('Server random', print_hex(self.server_random))
         self.debug_print('Key exchange', self.cipher_suite.key_exchange.__class__.__name__)
+        self.debug_print('Server cert not before', self.server_certificate.not_valid_before)
+        self.debug_print('Server cert not after', self.server_certificate.not_valid_after)
+        self.debug_print('Server cert fingerprint (sha256)', print_hex(self.server_certificate.fingerprint(SHA256())))
 
     @log
     def client_finish(self):

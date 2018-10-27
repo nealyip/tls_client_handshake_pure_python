@@ -50,7 +50,7 @@ class Client:
         self.match_hostname = match_hostname
         self.http_version = None
 
-        self.conn = socket.create_connection((host, 443))
+        self.conn = socket.create_connection((host, port))
         self.debug = debug
 
     def debug_print(self, title, message, *, prefix='\t'):

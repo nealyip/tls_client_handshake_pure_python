@@ -29,7 +29,7 @@ python index.py www.google.com
 *pipenv*
 ```
 pipenv install
-pipenv run python index.py google.com -c AES256-SHA
+pipenv run python index.py google.com
 ```
 
 # Usage #

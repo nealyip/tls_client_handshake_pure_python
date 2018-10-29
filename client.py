@@ -146,8 +146,8 @@ class Client:
         self.debug_print('TLS version', self.tls_version)
         self.debug_print('Server random', print_hex(self.server_random))
         self.debug_print('Key exchange', self.cipher_suite.key_exchange.__class__.__name__)
-        self.debug_print('Server cert not before', self.server_certificate.not_valid_before)
-        self.debug_print('Server cert not after', self.server_certificate.not_valid_after)
+        self.debug_print('Server cert not before (UTC)', self.server_certificate.not_valid_before)
+        self.debug_print('Server cert not after (UTC)', self.server_certificate.not_valid_after)
         self.debug_print('Server cert fingerprint (sha256)', print_hex(self.server_certificate.fingerprint(SHA256())))
 
     @log

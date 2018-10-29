@@ -13,7 +13,7 @@ pipenv
 cryptography  
 
 # Installation #
-setup your venv  
+*venv*  
 ```
 python -m venv .
 source bin/activate (linux)
@@ -21,6 +21,15 @@ Scripts/activate (windows cmd)
 
 pip install pipenv
 pipenv install
+# or you can install cryptography directly without pipenv
+
+python index.py www.google.com
+```
+
+*pipenv*
+```
+pipenv install
+pipenv run python index.py google.com -c AES256-SHA
 ```
 
 # Usage #

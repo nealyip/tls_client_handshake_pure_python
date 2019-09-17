@@ -1,10 +1,12 @@
+import argparse
+import os
+
+import constants
 import ec_curves
 import extensions
 import signature_algorithms
 import tls
 from client import Client
-import argparse
-import constants
 
 
 def args():
@@ -60,5 +62,8 @@ if __name__ == '__main__':
         # cipher_suites = ('ECDHE-RSA-AES256-GCM-SHA384', )
         # cipher_suites = ('ECDHE-ECDSA-AES256-GCM-SHA384',)
 
-    client = Client(host, port, tls_version, cipher_suites, extensions=extensions, match_hostname=True)
+    ssl_key_logfile = os.getenv('SSLKEYLOGFILE')
+
+    client = Client(host, port, tls_version, cipher_suites, extensions=extensions, match_hostname=True,
+                    ssl_key_logfile=ssl_key_logfile)
     client.run()

@@ -30,7 +30,8 @@ def log(fun):
 
 
 class Client:
-    def __init__(self, host, port, tls_version, ciphers, *, extensions=None, match_hostname=True, debug=True):
+    def __init__(self, host, port, tls_version, ciphers, *, extensions=None, match_hostname=True, debug=True,
+                 ssl_key_logfile=None):
         self.host = host
         self.port = port
         self.tls_version = tls_version
@@ -52,6 +53,7 @@ class Client:
 
         self.conn = socket.create_connection((host, port))
         self.debug = debug
+        self.ssl_key_logfile = ssl_key_logfile
 
     def debug_print(self, title, message, *, prefix='\t'):
         if self.debug:
@@ -190,6 +192,10 @@ class Client:
         self.debug_print('Pre master secret', print_hex(pre_master_secret))
         self.debug_print('Master secret', print_hex(self.cipher_suite.keys['master_secret']))
         self.debug_print('Verify data', print_hex(verify_data))
+
+        if self.ssl_key_logfile:
+            with open(self.ssl_key_logfile, 'a') as f:
+                f.write(f'CLIENT_RANDOM {self.client_random.hex()} {self.cipher_suite.keys["master_secret"].hex()}')
 
     @log
     def server_finish(self):

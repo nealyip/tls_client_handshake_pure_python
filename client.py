@@ -195,7 +195,7 @@ class Client:
 
         if self.ssl_key_logfile:
             with open(self.ssl_key_logfile, 'a') as f:
-                f.write(f'{os.linesep}CLIENT_RANDOM {self.client_random.hex()} {self.cipher_suite.keys["master_secret"].hex()}')
+                f.write(f'CLIENT_RANDOM {self.client_random.hex()} {self.cipher_suite.keys["master_secret"].hex()}\n')
 
     @log
     def server_finish(self):

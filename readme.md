@@ -61,10 +61,12 @@ Agree with ECDHE-RSA / ECDHE-ECDSA.
 Server generates his ec key pair and send the public key to the client along with the signature made by the server private key which the public key should be found on the server's digital certificate.  
 ### Client Finish
 Client verifies the ec public key with the rsa / ec public key on the digital certificate.  
-Client uses the ec public key and generates his own ec key pair in exchange for the master secret.  
+Client uses the ec public key and generates his own ec key pair in exchange for the pre master secret.  
 Client sends his ec public key to the server.  
+Client generates the master secret with the pre master secret and having shared randoms.  
 Client starts sending encrypted data.  
 ### Server Finish
 Server receives the client's ec public key  
-Server uses the client's ec public key and the server private key in exchange for the same master secret.  
+Server uses the client's ec public key and the server private key in exchange for the same pre master secret.  
+Server generates the master secret with the pre master secret and having shared randoms.  
 Server decrypts the request with the master secret.  

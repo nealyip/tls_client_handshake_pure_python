@@ -55,7 +55,7 @@ PR is welcome
 
 # ECDHE-RSA / ECDHE-ECDSA Algorithm
 ### Client Hello
-Suggest Cipher Suite
+Suggest Cipher Suites
 ### Server Hello
 Agree with ECDHE-RSA / ECDHE-ECDSA.  
 Server generates his ec key pair and send the public key to the client along with the signature made by the server private key which the public key should be found on the server's digital certificate.  

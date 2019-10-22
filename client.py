@@ -54,6 +54,7 @@ class Client:
         self.conn = socket.create_connection((host, port))
         self.debug = debug
         self.ssl_key_logfile = ssl_key_logfile
+        self.is_server_key_exchange = None
 
     def debug_print(self, title, message, *, prefix='\t'):
         if self.debug:
@@ -139,7 +140,8 @@ class Client:
 
         next_bytes = self.read()
         self.messages.append(next_bytes)
-        if next_bytes[:1] == b'\x0c':  # Server key exchange
+        self.is_server_key_exchange = next_bytes[:1] == b'\x0c'
+        if self.is_server_key_exchange:  # Server key exchange
             self.cipher_suite.parse_key_exchange_params(next_bytes)
 
             hello_done_bytes = self.read()
@@ -151,6 +153,10 @@ class Client:
         self.debug_print('Server cert not before (UTC)', self.server_certificate.not_valid_before)
         self.debug_print('Server cert not after (UTC)', self.server_certificate.not_valid_after)
         self.debug_print('Server cert fingerprint (sha256)', print_hex(self.server_certificate.fingerprint(SHA256())))
+        if self.is_server_key_exchange:
+            public_key = self.cipher_suite.key_exchange.public_key
+            self.debug_print('Key Exchange Server Public Key ({!s} bytes)'.format(len(public_key)),
+                             print_hex(public_key))
 
     @log
     def client_finish(self):
@@ -189,6 +195,11 @@ class Client:
 
         self.client_sequence_number += 1
         self.conn.send(key_exchange_bytes + change_cipher_spec_bytes + encrypted_finished_bytes)
+        if self.is_server_key_exchange:
+            self.debug_print('Key Exchange Client Public Key ({!s} bytes)'.format(len(encrypted_pre_master_secret)),
+                             print_hex(encrypted_pre_master_secret))
+        else:
+            self.debug_print('Encrypted pre master secret', print_hex(encrypted_pre_master_secret))
         self.debug_print('Pre master secret', print_hex(pre_master_secret))
         self.debug_print('Master secret', print_hex(self.cipher_suite.keys['master_secret']))
         self.debug_print('Verify data', print_hex(verify_data))

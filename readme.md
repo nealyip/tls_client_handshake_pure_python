@@ -6,6 +6,7 @@ Do not use this project in any production environment, it is just for education.
 TLSv1.1, TLSv1.2  
 RSA, ECDHE-RSA, ECDHE-ECDSA key exchange  
 AES CBC, GCM encryption  
+SSLKEYLOGFILE
 
 # Requirements #
 Python 3.6 (tested)  

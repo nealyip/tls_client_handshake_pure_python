@@ -5,7 +5,7 @@ from datetime import datetime
 
 import constants
 import tls
-from certificates import get_certificate
+from certificates import get_certificate, load
 from cipher_suites import CIPHER_SUITES, CipherSuite
 from packer import pack, prepend_length, record
 from reader import read
@@ -42,6 +42,7 @@ class Client:
         self.client_random = int(now.timestamp()).to_bytes(4, 'big') + os.urandom(28)
         self.server_random = None
         self.session_id = b''
+        # self.session_id = bytes.fromhex('bc8f2d2cfb470c8b372d1eb937740dfa51e881d50d03237065b6fcf002513daf')
         ciphers = ciphers if isinstance(ciphers, collections.Iterable) else tuple(ciphers)
         self.ciphers = tuple(CIPHER_SUITES[cipher] for cipher in ciphers if cipher in CIPHER_SUITES)
         self.extensions = extensions
@@ -118,6 +119,8 @@ class Client:
         self.server_random, hello_bytes = hello_bytes[6:6 + 32], hello_bytes[6 + 32:]
         session_id_length = int.from_bytes(hello_bytes[:1], 'big')
         session_id, hello_bytes = hello_bytes[:session_id_length + 1], hello_bytes[session_id_length + 1:]
+        # This session_id can be reused for the session_id in the client Hello for the next request
+        # Reusing a session_id results in no certificate sent after Server Hello
         server_cipher_suite, hello_bytes = hello_bytes[:2], hello_bytes[2:]
         compression_method, hello_bytes = hello_bytes[:1], hello_bytes[1:]
         extensions_length, hello_bytes = int.from_bytes(hello_bytes[:2], 'big'), hello_bytes[2:]
@@ -128,17 +131,23 @@ class Client:
         assert self.http_version == constants.EXTENSION_ALPN_HTTP_1_1, 'Not support http2 yet'
 
         certificate_bytes = self.read()
-        assert certificate_bytes[0] == 0x0B, 'Not a certificate response'
-        self.messages.append(certificate_bytes)
-        certificate_bytes = certificate_bytes[7:]
-        os.path.exists(r'./debug') or os.makedirs(r'./debug')
-        self.server_certificate = get_certificate(certificate_bytes, open(r'./debug/{}.crt'.format(self.host), 'wb+'),
-                                                  match_hostname=self.match_hostname, host=self.host)
+        cached_cert_path = r'./debug/{}.crt'.format(self.host)
+        if certificate_bytes[0] == 0x0B:
+            self.messages.append(certificate_bytes)
+            certificate_bytes = certificate_bytes[7:]
+            os.path.exists(r'./debug') or os.makedirs(r'./debug')
+            self.server_certificate = get_certificate(certificate_bytes, open(cached_cert_path, 'wb+'),
+                                                      match_hostname=self.match_hostname, host=self.host)
+            next_bytes = self.read()
+        elif os.path.exists(cached_cert_path):
+            self.server_certificate = load(open(cached_cert_path, 'rb'))
+            next_bytes = certificate_bytes
+        else:
+            raise ValueError('No certificate was received.')
 
         self.cipher_suite = CipherSuite.get_from_id(self.tls_version, self.client_random, self.server_random,
                                                     self.server_certificate, server_cipher_suite)
 
-        next_bytes = self.read()
         self.messages.append(next_bytes)
         self.is_server_key_exchange = next_bytes[:1] == b'\x0c'
         if self.is_server_key_exchange:  # Server key exchange
@@ -146,6 +155,8 @@ class Client:
 
             hello_done_bytes = self.read()
             self.messages.append(hello_done_bytes)
+        else:  # @todo handle sessions
+            raise ValueError('No server key exchange has received. # @todo')
         self.debug_print('Cipher suite negotiated', ' {}({})'.format(self.cipher_suite, print_hex(server_cipher_suite)))
         self.debug_print('TLS version', self.tls_version)
         self.debug_print('Server random', print_hex(self.server_random))

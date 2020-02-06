@@ -1,4 +1,5 @@
 import os
+import io
 import random
 import ssl
 
@@ -31,7 +32,15 @@ def get_certificate(certificate_bytes, filelike, *, match_hostname, host) -> x50
 
 
 def load(cert) -> x509.Certificate:
-    decoded = x509.load_pem_x509_certificate(cert.encode(), default_backend())
+    if isinstance(cert, io.BufferedIOBase):
+        cert = cert.read()
+        if len(cert) == 0:
+            raise ValueError('The cached certificate is empty. Please manually delete the cert file under the debug '
+                             'folder.')
+
+    if isinstance(cert, str):
+        cert = cert.encode()
+    decoded = x509.load_pem_x509_certificate(cert, default_backend())
     return decoded
 
 

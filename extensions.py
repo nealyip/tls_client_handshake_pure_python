@@ -141,7 +141,7 @@ class SupportedVersionsExtension(Extension):
 
     @classmethod
     def load_from_bytes(cls, data_bytes):
-        return cls((tls.TLS.get_by_code(tuple(data_bytes[i:i+1] for i in range(0, len(data_bytes)))), ))
+        return cls((tls.TLS.get_by_code(tuple(data_bytes[i:i + 1] for i in range(0, len(data_bytes)))),))
 
     @property
     def data_bytes(self):
@@ -168,3 +168,17 @@ class PaddingExtension(Extension):
     @property
     def data_bytes(self):
         return b'\x00'
+
+
+class StatusRequestExtension(Extension):
+    header = b'\x00\x05'
+    inner_len_byte_size = 0
+
+    OCSP = b'\x01'
+
+    @property
+    def data_bytes(self):
+        responder_id = b''
+        request_extensions = b''
+        content_bytes = prepend_length(responder_id, len_byte_size=2) + prepend_length(request_extensions, len_byte_size=2)
+        return StatusRequestExtension.OCSP + content_bytes

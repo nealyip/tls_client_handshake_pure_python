@@ -87,7 +87,6 @@ class SignatureAlgorithmExtension(Extension):
 
 class SignedCertificateTimestampExtension(Extension):
     header = b'\x00\x12'
-    inner_len_byte_size = 0
 
 
 class ApplicationLayerProtocolNegotiationExtension(Extension):

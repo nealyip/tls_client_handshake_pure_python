@@ -42,6 +42,7 @@ class Client:
         self.client_random = int(now.timestamp()).to_bytes(4, 'big') + os.urandom(28)
         self.server_random = None
         self.session_id = b''
+        # @todo reuse session_id if possible here
         # self.session_id = bytes.fromhex('bc8f2d2cfb470c8b372d1eb937740dfa51e881d50d03237065b6fcf002513daf')
         ciphers = ciphers if isinstance(ciphers, collections.Iterable) else tuple(ciphers)
         self.ciphers = tuple(CIPHER_SUITES[cipher] for cipher in ciphers if cipher in CIPHER_SUITES)
@@ -155,7 +156,7 @@ class Client:
 
             hello_done_bytes = self.read()
             self.messages.append(hello_done_bytes)
-        else:  # @todo handle sessions
+        elif self.session_id:  # @todo handle sessions
             raise ValueError('No server key exchange has received. # @todo')
         self.debug_print('Cipher suite negotiated', ' {}({})'.format(self.cipher_suite, print_hex(server_cipher_suite)))
         self.debug_print('TLS version', self.tls_version)

@@ -39,6 +39,8 @@ if __name__ == '__main__':
         extensions.SupportedGroupsExtension((ec_curves.SECP256R1(),)),
         extensions.SupportedVersionsExtension((tls_version,)),
         # extensions.SessionTicketExtension()
+        # extensions.SignedCertificateTimestampExtension(),
+        # extensions.StatusRequestExtension()
     )
 
     if parsed_args.cipher:

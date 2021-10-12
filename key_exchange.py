@@ -55,7 +55,8 @@ class ECDH(KeyExchange):
         signature = data_bytes[:signature_length]
 
         # Verify signature
-        check_content = self.client_random + self.server_random + params_bytes[4:8] + self.public_key
+        curve_type, named_curve, public_key_length = params_bytes[4:5], params_bytes[5:7], params_bytes[7:8]
+        check_content = self.client_random + self.server_random + curve_type + named_curve + public_key_length + self.public_key
         signature_algorithm.verify(signature, check_content)
 
     def exchange(self):

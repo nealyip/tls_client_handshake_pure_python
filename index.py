@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 
 import constants
 import ec_curves
@@ -15,15 +16,12 @@ def args():
     parser.add_argument('-c', '--cipher', dest="cipher", default=False, nargs='?')
     return parser.parse_args()
 
-
-if __name__ == '__main__':
-    parsed_args = args()
-    host = parsed_args.host
+def run(host, cipher):
     port = 443
     # TLSv1.0 is not supported
     tls_version = tls.TLSV1_2()
 
-    extensions = (
+    exts = (
         extensions.ServerNameExtension(host),
         extensions.SignatureAlgorithmExtension((
             signature_algorithms.RsaPkcs1Sha256,
@@ -43,8 +41,8 @@ if __name__ == '__main__':
         # extensions.StatusRequestExtension()
     )
 
-    if parsed_args.cipher:
-        cipher_suites = [parsed_args.cipher]
+    if cipher:
+        cipher_suites = [cipher]
     else:
         cipher_suites = (
             'ECDHE-ECDSA-AES256-GCM-SHA384',
@@ -66,6 +64,18 @@ if __name__ == '__main__':
 
     ssl_key_logfile = os.getenv('SSLKEYLOGFILE')
 
-    client = Client(host, port, tls_version, cipher_suites, extensions=extensions, match_hostname=True,
+    client = Client(host, port, tls_version, cipher_suites, extensions=exts, match_hostname=True,
                     ssl_key_logfile=ssl_key_logfile)
     client.run()
+
+if __name__ == '__main__':
+    parsed_args = args()
+    host = parsed_args.host
+    if host == '-':
+        for host in sys.stdin:
+            host = host.strip()
+            if host == '':
+                continue
+            run(host, parsed_args.cipher)
+    else:
+        run(host, parsed_args.cipher)

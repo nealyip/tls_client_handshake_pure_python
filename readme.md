@@ -42,10 +42,10 @@ python index.py <domain> -c <cipher>
 for example,  
 python index.py www.facebook.com -c AES256-SHA
 
-cat <<EOF | python index.py -c ECDHE-ECDSA-AES256-GCM-SHA384 - 
-www.facebook.com
-www.google.com
-EOF
+cat <<EOF | python index.py -c ECDHE-ECDSA-AES256-GCM-SHA384 -   
+www.facebook.com  
+www.google.com   
+EOF  
 
 cat hosts.txt | python index.py -
 

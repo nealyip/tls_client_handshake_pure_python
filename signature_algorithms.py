@@ -7,7 +7,7 @@ from cryptography.hazmat.primitives.hashes import Hash, MD5, SHA1, SHA256, SHA38
 from cryptography.hazmat.primitives.asymmetric import ec
 
 
-@utils.register_interface(HashAlgorithm)
+# @utils.register_interface(HashAlgorithm)
 class MD5SHA1(SHA1):
     name = "md5-sha1"
     digest_size = 36

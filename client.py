@@ -44,7 +44,7 @@ class Client:
         self.session_id = b''
         # @todo reuse session_id if possible here
         # self.session_id = bytes.fromhex('bc8f2d2cfb470c8b372d1eb937740dfa51e881d50d03237065b6fcf002513daf')
-        ciphers = ciphers if isinstance(ciphers, collections.Iterable) else tuple(ciphers)
+        ciphers = ciphers if isinstance(ciphers, collections.abc.Iterable) else tuple(ciphers)
         self.ciphers = tuple(CIPHER_SUITES[cipher] for cipher in ciphers if cipher in CIPHER_SUITES)
         self.extensions = extensions
         self.messages = []

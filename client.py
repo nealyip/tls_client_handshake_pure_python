@@ -44,7 +44,7 @@ class Client:
         self.session_id = b''
         # @todo reuse session_id if possible here
         # self.session_id = bytes.fromhex('bc8f2d2cfb470c8b372d1eb937740dfa51e881d50d03237065b6fcf002513daf')
-        ciphers = ciphers if isinstance(ciphers, collections.Iterable) else tuple(ciphers)
+        ciphers = ciphers if isinstance(ciphers, collections.abc.Iterable) else tuple(ciphers)
         self.ciphers = tuple(CIPHER_SUITES[cipher] for cipher in ciphers if cipher in CIPHER_SUITES)
         self.extensions = extensions
         self.messages = []
@@ -162,8 +162,8 @@ class Client:
         self.debug_print('TLS version', self.tls_version)
         self.debug_print('Server random', print_hex(self.server_random))
         self.debug_print('Key exchange', self.cipher_suite.key_exchange.__class__.__name__)
-        self.debug_print('Server cert not before (UTC)', self.server_certificate.not_valid_before)
-        self.debug_print('Server cert not after (UTC)', self.server_certificate.not_valid_after)
+        self.debug_print('Server cert not before (UTC)', self.server_certificate.not_valid_before_utc)
+        self.debug_print('Server cert not after (UTC)', self.server_certificate.not_valid_after_utc)
         self.debug_print('Server cert fingerprint (sha256)', print_hex(self.server_certificate.fingerprint(SHA256())))
         if self.is_server_key_exchange:
             public_key = self.cipher_suite.key_exchange.public_key

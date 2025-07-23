@@ -9,7 +9,7 @@ AES CBC, GCM encryption
 SSLKEYLOGFILE
 
 # Requirements #
-Python 3.6 (tested)  
+Python 3.13 (tested)  
 pipenv  
 cryptography  
 

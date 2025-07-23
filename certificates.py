@@ -3,6 +3,7 @@ import io
 import random
 import ssl
 
+from backports.ssl_match_hostname import match_hostname
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 
@@ -50,4 +51,4 @@ def ssl_decode_cert(path):
 
 
 def attempt_match_hostname(certpath, host):
-    ssl.match_hostname(ssl_decode_cert(certpath), host)
+    match_hostname(ssl_decode_cert(certpath), host)

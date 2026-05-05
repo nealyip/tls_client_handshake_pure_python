@@ -14,13 +14,12 @@ class Extension(ABC):
         exts = []
         while ext_bytes:
             ext_type, ext_bytes = ext_bytes[:2], ext_bytes[2:]
-
             g = globals()
-            found = next(filter(lambda x: getattr(g[x], 'header', None) == ext_type, g))
+            found = next(filter(lambda x: getattr(g[x], 'header', None) == ext_type, g), None)
             length, ext_bytes = int.from_bytes(ext_bytes[:2], 'big'), ext_bytes[2:]
             data, ext_bytes = ext_bytes[:length], ext_bytes[length:]
-            exts.append(g[found].load_from_bytes(data))
-
+            if found:
+                exts.append(g[found].load_from_bytes(data))
         return tuple(exts)
 
     @classmethod
@@ -168,6 +167,49 @@ class PaddingExtension(Extension):
     @property
     def data_bytes(self):
         return b'\x00'
+
+
+class KeyShareExtension(Extension):
+    """
+    RFC 8446 §4.2.8.  Used in both ClientHello (list of shares) and
+    ServerHello (single selected share).
+
+    Client-side: pass key_shares as [(group_bytes_2, pub_key_bytes), ...]
+    Server-side: load_from_bytes populates server_group / server_public_key_bytes.
+    """
+    header = b'\x00\x33'
+
+    def __init__(self, key_shares=None):
+        self.key_shares = key_shares or []   # [(group: bytes, pub_key: bytes)]
+        self.server_group = None
+        self.server_public_key_bytes = None
+
+    @classmethod
+    def load_from_bytes(cls, data_bytes):
+        # ServerHello format: NamedGroup(2) + key_exchange_length(2) + key_exchange
+        ext = cls([])
+        ext.server_group = data_bytes[:2]
+        ke_len = int.from_bytes(data_bytes[2:4], 'big')
+        ext.server_public_key_bytes = data_bytes[4:4 + ke_len]
+        return ext
+
+    @property
+    def data_bytes(self):
+        # ClientHello: concatenation of KeyShareEntry structs
+        result = b''
+        for group, pub_key in self.key_shares:
+            result += group + len(pub_key).to_bytes(2, 'big') + pub_key
+        return result
+
+
+class PskKeyExchangeModesExtension(Extension):
+    """RFC 8446 §4.2.9.  Required when advertising TLS 1.3."""
+    header = b'\x00\x2d'
+    inner_len_byte_size = 1
+
+    @property
+    def data_bytes(self):
+        return b'\x01'  # psk_dhe_ke
 
 
 class StatusRequestExtension(Extension):

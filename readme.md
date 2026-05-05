@@ -1,12 +1,13 @@
 # TLS Client Handshake Pure Python implementation #
-This project is mainly used for demonstrating how tls handshake is performed for python programmers.    
-Do not use this project in any production environment, it is just for education.    
+This project is mainly used for demonstrating how TLS handshakes are performed for Python programmers.  
+Do not use this project in any production environment, it is just for education.
 
 # Supports #
-TLSv1.1, TLSv1.2  
-RSA, ECDHE-RSA, ECDHE-ECDSA key exchange  
-AES CBC, GCM encryption  
-SSLKEYLOGFILE
+TLSv1.1, TLSv1.2, TLSv1.3  
+RSA, ECDHE-RSA, ECDHE-ECDSA key exchange (TLS 1.2)  
+X25519, SECP256R1, SECP384R1 key exchange (TLS 1.3)  
+AES-CBC, AES-GCM encryption  
+SSLKEYLOGFILE (both TLS 1.2 `CLIENT_RANDOM` and TLS 1.3 `CLIENT_TRAFFIC_SECRET_0` formats)
 
 # Requirements #
 Python 3.13 (tested)  
@@ -14,7 +15,7 @@ pipenv
 cryptography  
 
 # Installation #
-*venv*  
+*venv*
 ```
 python -m venv .
 source bin/activate (linux)
@@ -34,52 +35,148 @@ pipenv run python index.py google.com
 ```
 
 # Usage #
-python index.py <domain>  
-for example,  
-python index.py www.facebook.com  
-To specify cipher  
-python index.py <domain> -c <cipher>  
-for example,  
-python index.py www.facebook.com -c AES256-SHA
+```
+python index.py [-t VERSION] [-c CIPHER] <domain>
+```
 
-cat <<EOF | python index.py -c ECDHE-ECDSA-AES256-GCM-SHA384 -   
-www.facebook.com  
-www.google.com   
-EOF  
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-t`, `--tls` | `1.3` | Maximum TLS version to negotiate: `1.1` \| `1.2` \| `1.3` |
+| `-c`, `--cipher` | *(auto)* | Force a specific cipher suite name (e.g. `AES256-SHA`) |
 
+The client advertises up to the requested version. The server picks the actual version.
+
+```
+# Negotiate highest available version (TLS 1.3 preferred)
+python index.py www.google.com
+
+# Force TLS 1.2 only
+python index.py www.google.com -t 1.2
+
+# Force TLS 1.2 with a specific cipher suite
+python index.py www.facebook.com -t 1.2 -c AES256-SHA
+
+# Force TLS 1.1 (rejected by most modern servers)
+python index.py www.example.com -t 1.1
+```
+
+Batch mode (read hosts from stdin):
+```
 cat hosts.txt | python index.py -
 
-# Todo #
-TLS v1.3  
-TLS v1.0 (low priority as its life has already ended)  
-PSS Padding on signature algorithm  
-Other Cipher suites such as DE  
-http2  
+cat <<EOF | python index.py -t 1.2 -
+www.facebook.com
+www.google.com
+EOF
+```
 
+To capture TLS secrets for Wireshark decryption:
+```
+SSLKEYLOGFILE=~/tls_keys.log python index.py www.google.com
+```
 
-# Contribution #
-PR is welcome
+# Version negotiation #
+The client sends a ClientHello advertising both TLS 1.3 and TLS 1.2 via the `supported_versions`
+extension. After the ServerHello, the client automatically selects the appropriate handshake flow:
 
-# RSA key exchange algorithm
+- **TLS 1.3**: handled by `tls13/handshake.py` (new control plane)
+- **TLS 1.2 / TLS 1.1**: handled by the original flow in `client.py`
+
+# TLS 1.3 Handshake #
+```
+Client                                           Server
+──────                                           ──────
+ClientHello
+  + supported_versions: [TLS 1.3, TLS 1.2]
+  + key_share: x25519 public key
+  + signature_algorithms
+  + psk_key_exchange_modes
+                              ────────────────►
+                                                ServerHello
+                                                  + supported_versions: TLS 1.3
+                                                  + key_share: x25519 public key
+                              ◄────────────────
+                              ── derive handshake keys (HKDF) ──
+                                                {EncryptedExtensions}
+                                                {Certificate}
+                                                {CertificateVerify}
+                                                {Finished}
+                              ◄────────────────
+{Finished}                    ────────────────►
+── derive application keys (HKDF) ──
+{HTTP GET}                    ────────────────►
+                                                {HTTP Response}
+                              ◄────────────────
+```
+
+### Key schedule (RFC 8446 §7.1)
+```
+0 ──► HKDF-Extract ──► Early Secret
+                            │
+                   Derive-Secret("derived", "")
+                            │
+ECDHE ──► HKDF-Extract ──► Handshake Secret
+                            ├── Derive-Secret("c hs traffic", CH..SH) → client_hs_key
+                            └── Derive-Secret("s hs traffic", CH..SH) → server_hs_key
+                            │
+                   Derive-Secret("derived", "")
+                            │
+0 ──► HKDF-Extract ──► Master Secret
+                            ├── Derive-Secret("c ap traffic", CH..SF) → client_app_key
+                            └── Derive-Secret("s ap traffic", CH..SF) → server_app_key
+```
+
+# RSA key exchange algorithm (TLS 1.2) #
 When RSA is used for server authentication and key exchange, a 48-byte pre_master_secret  
 is generated by the client, encrypted under the server's public key, and sent to the server.  
-The server uses its private key to decrypt the pre_master_secret.  Both parties then  
+The server uses its private key to decrypt the pre_master_secret. Both parties then  
 convert the pre_master_secret into the master_secret.
 
-# ECDHE-RSA / ECDHE-ECDSA Algorithm
+# ECDHE-RSA / ECDHE-ECDSA Algorithm (TLS 1.2) #
 ### Client Hello
 Suggest Cipher Suites
 ### Server Hello
 Agree on ECDHE-RSA / ECDHE-ECDSA.  
-Server generates its ec key pair and sends the ec public key to the client along with the signature made by the server's private key which the public counterpart could be found in the server's digital certificate.  
+Server generates its EC key pair and sends the EC public key to the client along with the signature made by the server's private key which the public counterpart could be found in the server's digital certificate.
 ### Client Finish
-Client verifies the ec public key with the rsa / ec public key in the server's digital certificate.  
-Client uses the ec public key and generates its own ec key pair in exchange for the pre master secret.  
-Client sends its ec public key to the server.  
+Client verifies the EC public key with the RSA / EC public key in the server's digital certificate.  
+Client uses the EC public key and generates its own EC key pair in exchange for the pre master secret.  
+Client sends its EC public key to the server.  
 Client generates the master secret with the pre master secret and having shared randoms.  
-Client starts sending encrypted data.  
+Client starts sending encrypted data.
 ### Server Finish
-Server receives the client's ec public key  
-Server uses the client's ec public key and the server private key in exchange for the same pre master secret.  
+Server receives the client's EC public key.  
+Server uses the client's EC public key and the server private key in exchange for the same pre master secret.  
 Server generates the master secret with the pre master secret and having shared randoms.  
-Server decrypts the request with the master secret.  
+Server decrypts the request with the master secret.
+
+# Project structure #
+```
+index.py                  — CLI entry point
+client.py                 — Handshake orchestrator; negotiates version and dispatches
+tls13/
+  key_schedule.py         — HKDF-based key derivation (RFC 8446 §7.1)
+  record.py               — TLS 1.3 record layer encryption/decryption
+  handshake.py            — TLS 1.3 handshake control plane
+tls.py                    — TLS version objects (1.0 – 1.3)
+cipher_suites.py          — Cipher suite registry and key material derivation (TLS 1.2)
+extensions.py             — TLS extensions (SNI, ALPN, key_share, supported_versions, …)
+key_exchange.py           — RSA / ECDH / DH key exchange (TLS 1.2)
+encryption_algorithms.py  — AES-CBC, AES-GCM (TLS 1.2)
+certificates.py           — Certificate parsing and hostname validation
+signature_algorithms.py   — RSA-PKCS1, RSA-PSS, ECDSA signature verification
+prf.py                    — TLS 1.2 PRF (HMAC-based)
+ec_curves.py              — Elliptic curve definitions (X25519, P-256, P-384)
+packer.py / reader.py     — TLS record pack/unpack helpers
+```
+
+# Todo #
+TLS 1.3 HelloRetryRequest  
+TLS 1.3 session resumption (PSK)  
+TLS 1.0 (low priority, end-of-life)  
+PSS Padding on TLS 1.2 signature algorithm extension  
+DHE key exchange  
+HTTP/2
+
+# Contribution #
+PR is welcome

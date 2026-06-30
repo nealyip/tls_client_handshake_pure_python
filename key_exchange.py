@@ -60,6 +60,20 @@ class ECDH(KeyExchange):
         signature_algorithm.verify(signature, check_content)
 
     def exchange(self):
+        if self.name_curved.name == 'x25519':
+            return self._exchange_x25519()
+        return self._exchange_ec()
+
+    def _exchange_x25519(self):
+        from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
+        from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat as PF
+        priv = X25519PrivateKey.generate()
+        pub_bytes = priv.public_key().public_bytes(Encoding.Raw, PF.Raw)  # 32 raw bytes
+        server_pub = X25519PublicKey.from_public_bytes(self.public_key)
+        shared_key = priv.exchange(server_pub)
+        return shared_key, len(pub_bytes).to_bytes(1, 'big'), pub_bytes
+
+    def _exchange_ec(self):
         key = ec.generate_private_key(
             curve=self.name_curved.curve,
             backend=default_backend(),

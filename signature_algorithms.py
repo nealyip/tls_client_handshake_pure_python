@@ -66,7 +66,8 @@ class RsaPkcs1Sha256(SignatureAlgorithm):
 
 
 class RsaPssRsaeSha256(SignatureAlgorithm):
-    code = b'\x08\x09'
+    """rsa_pss_rsae_sha256 (0x0804) – standard RSA cert with PSS, SHA-256."""
+    code = b'\x08\x04'
 
     def verify(self, signature, content):
         self.public_key.verify(signature, content, padding.PSS(
@@ -79,6 +80,7 @@ class RsaPssRsaeSha256(SignatureAlgorithm):
 
 
 class RsaPssRsaeSha384(SignatureAlgorithm):
+    """rsa_pss_rsae_sha384 (0x0805) – standard RSA cert with PSS, SHA-384."""
     code = b'\x08\x05'
 
     def verify(self, signature, content):
@@ -86,6 +88,35 @@ class RsaPssRsaeSha384(SignatureAlgorithm):
             mgf=padding.MGF1(SHA384()),
             salt_length=padding.PSS.MAX_LENGTH
         ), SHA384())
+
+    def sign(self, content):
+        pass
+
+
+class RsaPssRsaeSha512(SignatureAlgorithm):
+    """rsa_pss_rsae_sha512 (0x0806)."""
+    code = b'\x08\x06'
+
+    def verify(self, signature, content):
+        from cryptography.hazmat.primitives.hashes import SHA512
+        self.public_key.verify(signature, content, padding.PSS(
+            mgf=padding.MGF1(SHA512()),
+            salt_length=padding.PSS.MAX_LENGTH
+        ), SHA512())
+
+    def sign(self, content):
+        pass
+
+
+class RsaPssPssSha256(SignatureAlgorithm):
+    """rsa_pss_pss_sha256 (0x0809) – PSS cert OID."""
+    code = b'\x08\x09'
+
+    def verify(self, signature, content):
+        self.public_key.verify(signature, content, padding.PSS(
+            mgf=padding.MGF1(SHA256()),
+            salt_length=padding.PSS.MAX_LENGTH
+        ), SHA256())
 
     def sign(self, content):
         pass
